@@ -70,7 +70,8 @@ defmodule Mix.Tasks.Release do
     # Start with a clean slate
     Mix.Tasks.Release.Clean.do_cleanup(:build)
     # Collect release configuration
-
+    
+    debug "tageting #{inspect(config)} with #{inspect(Mix.Project.config)}"
     config
     |> build_project
     |> generate_relx_config
