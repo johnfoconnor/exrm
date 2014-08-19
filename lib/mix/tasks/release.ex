@@ -17,6 +17,9 @@ defmodule Mix.Tasks.Release do
       # Set the verbosity level
       mix release --verbosity=[silent|quiet|normal|verbose]
 
+      # Target a specific application by name (only for umbrella projects)
+      mix release --name=my_app
+
   You may pass any number of arguments as needed. Make sure you pass arguments
   using `--key=value`, not `--key value`, as the args may be interpreted incorrectly
   otherwise.
@@ -58,20 +61,25 @@ defmodule Mix.Tasks.Release do
     Mix.Tasks.Release.Clean.do_cleanup(:build)
     # Collect release configuration
     config = parse_args(args)
+    cur_app = Mix.Project.config |> Keyword.get(:app) |> Atom.to_string
+    case config.name do
+      ^cur_app ->
+         config
+         |> build_project
+         |> generate_relx_config
+         |> generate_sys_config
+         |> generate_vm_args
+         |> generate_boot_script
+         |> execute_before_hooks
+         |> do_release
+         |> generate_nodetool
+         |> execute_after_hooks
+         |> update_release_package
 
-    config
-    |> build_project
-    |> generate_relx_config
-    |> generate_sys_config
-    |> generate_vm_args
-    |> generate_boot_script
-    |> execute_before_hooks
-    |> do_release
-    |> generate_nodetool
-    |> execute_after_hooks
-    |> update_release_package
-
-    info "The release for #{config.name}-#{config.version} is ready!"
+         info "The release for #{config.name}-#{config.version} is ready!"
+       _ ->
+         debug "skipping #{cur_app}"
+    end
   end
 
   defp build_project(%Config{verbosity: verbosity} = config) do
