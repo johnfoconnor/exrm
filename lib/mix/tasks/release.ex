@@ -16,6 +16,9 @@ defmodule Mix.Tasks.Release do
 
       # Set the verbosity level
       mix release --verbosity=[silent|quiet|normal|verbose]
+      
+      # choose a specific app in an umbrella project
+      mix release --app=:my_app
 
   You may pass any number of arguments as needed. Make sure you pass arguments
   using `--key=value`, not `--key value`, as the args may be interpreted incorrectly
@@ -43,21 +46,30 @@ defmodule Mix.Tasks.Release do
   @_LIB_DIRS    "{{{LIB_DIRS}}}"
 
   def run(args) do
-    if Mix.Project.umbrella? do
-      config = [build_path: Mix.Project.build_path, umbrella?: true]
-      for %Mix.Dep{app: app, opts: opts} <- Mix.Dep.Umbrella.loaded do
-        Mix.Project.in_project(app, opts[:path], config, fn _ -> do_run(args) end)
-      end
-    else
-      do_run(args)
+    config = parse_args(args)
+    case {Mix.Project.umbrella?, config[:app]} do
+      {true, app} ->
+        target_deps = if app do
+            Mix.Dep.Umbrella.loaded |> Enum.filter(fn(%Mix.Dep{app: a}) -> a == app end)
+          else
+            Mix.Dep.Umbrella.loaded 
+        end
+        parent_config = [build_path: Mix.Project.build_path, umbrella?: true]
+        for %Mix.Dep{app: app, opts: opts} <- taret_deps do
+          Mix.Project.in_project(app, opts[:path], parent_config, fn _ -> do_run(config) end)
+        end
+      {false, nil} ->
+        do_run(config)
+      {false, app} ->
+        info "specified #{app} only effects umbrella projects, ignoring"
+        do_run(config)
     end
   end
 
-  defp do_run(args) do
+  defp do_run(config) do
     # Start with a clean slate
     Mix.Tasks.Release.Clean.do_cleanup(:build)
     # Collect release configuration
-    config = parse_args(args)
 
     config
     |> build_project
