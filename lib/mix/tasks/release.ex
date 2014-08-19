@@ -47,7 +47,7 @@ defmodule Mix.Tasks.Release do
 
   def run(args) do
     config = parse_args(args)
-    case {Mix.Project.umbrella?, config[:app]} do
+    case {Mix.Project.umbrella?, config.app} do
       {true, app} ->
         target_deps = if app do
             Mix.Dep.Umbrella.loaded |> Enum.filter(fn(%Mix.Dep{app: a}) -> a == app end)
