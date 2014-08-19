@@ -55,7 +55,7 @@ defmodule Mix.Tasks.Release do
             Mix.Dep.Umbrella.loaded 
         end
         parent_config = [build_path: Mix.Project.build_path, umbrella?: true]
-        for %Mix.Dep{app: app, opts: opts} <- taret_deps do
+        for %Mix.Dep{app: app, opts: opts} <- target_deps do
           Mix.Project.in_project(app, opts[:path], parent_config, fn _ -> do_run(config) end)
         end
       {false, nil} ->
